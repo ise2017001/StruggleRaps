@@ -1,12 +1,9 @@
 import React from 'react';
-import {Alert} from 'react-native';
-import  * as Facebook from 'expo-facebook';
-
+import * as Facebook from 'expo-facebook';
 
 import {StyleSheet, Text, View} from 'react-native';
 import {f, auth, database, storage} from './config/config.js';
 import {SocialIcon} from 'react-native-elements';
-import TouchableHighlight from "react-native-web/src/exports/TouchableHighlight";
 
 
 export default class App extends React.Component {
@@ -19,7 +16,14 @@ export default class App extends React.Component {
             if (user) {
                 // User is signed in.
                 console.log('User already signed in');
-                this.signOutUserwithEmail;
+
+                    f.auth().signOut()
+                        .then(() => {
+                            console.log('User logged out');
+                        }).catch((error) => {
+                        console.log(error.code, error.message);
+                    });
+
             } else {
                 // No user is signed in.
                 console.log('No user is signed in at the moment');
@@ -41,23 +45,14 @@ export default class App extends React.Component {
                     button
                     type='facebook'
                     onPress={() => {
-                        this.loginWithFacebook();
+                        this.facebookLogin();
                     }}
                 />
-
-
             </View>
         );
     }
 
-    signOutUserwithEmail = () => {
-        f.auth().signOut()
-            .then(() => {
-                console.log('User logged out');
-            }).catch((error) => {
-            console.log(error.code, error.message);
-        });
-    }
+
 
     signupUserWithEmail = (email, password) => {
         //available in firebase docs
@@ -72,53 +67,32 @@ export default class App extends React.Component {
         });
     }
 
-    // async loginWithFacebook() {
-    //     //expo api gets credentials and firebase takes care of the authentication with these credentials
-    //     //so first explore expo's facebook api docs
-    //     // https://docs.expo.io/versions/latest/sdk/facebook/
-    //     //then firebase docs for facebook login
-    //
-    //     const {
-    //       type,
-    //       token,
-    //       } = await Expo.Facebook.logInWithReadPermissionsAsync('486329201914935', {
-    //       permissions: ['public_profile'],
-    //     }).then(()=>{console.log('success')})
-    //         .catch((error)=>console.log('error', error.code, error.message));
-    //
-    //     if (type === 'success') {
-    //         const credentials = f.auth.FacebookAuthProvider.credential(token);
-    //                 f.auth.signInWithCredential(credentials).catch((error) => {
-    //                     console.log('Error logging in with facebook', error.message);
-    //                 });
-    //     }
-            async loginWithFacebook() {
+    async facebookLogin() {
         try {
             const {
                 type,
                 token,
                 expires,
                 permissions,
-                declinedPermissions,
-            } = await Facebook.logInWithReadPermissionsAsync('486329201914935', {
-                permissions: ['public_profile'],
-            });
+                declinedPermissions
+            } = await Facebook.logInWithReadPermissionsAsync(
+                '486329201914935', {permissions: ['email', 'public_profile'],})
+                .then(()=>{
+                    console.log('Trying to login');
+                });
             if (type === 'success') {
-                // Get the user's name using Facebook's Graph API
-                const response = await fetch(`https://graph.facebook.com/me?access_token=${token}`);
                 const credentials = f.auth.FacebookAuthProvider.credential(token);
-                f.auth.signInWithCredential(credentials).catch((error) => {
-                    console.log('Error logging in with facebook', error.message);
+                f.auth().signInWithCredential(credentials).catch((error) => {
+                    console.log('Error :', error);
                 })
             } else {
-                // type === 'cancel'
-                console.log('signin cancelled');
+                console.log('Cancelled');
             }
         } catch ({message}) {
-            alert(`Facebook Login Error: ${message}`);
+            console.log('Error login message', message);
+        }
         }
     }
-}
 
 const styles = StyleSheet.create({
     container: {
